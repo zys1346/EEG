@@ -1,6 +1,5 @@
 %{
-	此脚本为脑电数据预处理及ERP画图批量处理所用的脚本，本脚本所用的函数基于matlab和开源工具箱EEGlab，其函数使用说明均可以在公开网站上找到，如有问题可自行搜索。
-	也可联系: lijw98@outlook.com
+	此脚本为脑电数据预处理及ERP画图批量处理所用的脚本，基于lijw98@outlook.com的源码进行一定修改，以适合本人使用
 %}
 
 % 假设有20个被试，每个被试有三个条件分别为A B C
@@ -23,11 +22,11 @@
 	colour={'b','r','g'};
 	for sub= 1:20 %被试循环
 			filename=['D:\rawdata\',num2str(sub),'\','.cnt'];%设置文件的路径和名称，生成名为filename的路径和文件名变量
-			EEG = pop_loadbv([filename]);%导入数据，注意，不同类型的数据有不同的导入函数，可以先使用EEGlab的import data手动操作，然后从EEG.history中找到相应代码，进行修改后批量处理
+			EEG = pop_biosig([filename]);%导入数据，注意，不同类型的数据有不同的导入函数，可以先使用EEGlab的import data手动操作，然后从EEG.history中找到相应代码，进行修改后批量处理（BDF:pop_biosig()）
 			EEG=pop_chanedit(EEG, 'lookup','C:\eeglab2022.0\\plugins\\dipfit\\standard_BEM\\elec\\standard_1005.elc');%电极定位，需要找到安装eeglab的文件夹，找到同名文件，替换路径即可
-			EEG = pop_eegfiltnew(EEG, 'locutoff',0.1,'plotfreqz',1);%高通，滤掉0.1Hz以下的频率
+			EEG = pop_eegfiltnew(EEG, 'locutoff',4,'plotfreqz',1);%高通，滤掉4Hz以下的频率
 			EEG = pop_eegfiltnew(EEG, 'locutoff',49,'hicutoff',51,'revfilt',1,'plotfreqz',1);%滤工频干扰
-			EEG = pop_eegfiltnew(EEG, 'hicutoff',100,'plotfreqz',1);%滤掉100Hz以上的频率
+			EEG = pop_eegfiltnew(EEG, 'hicutoff',40,'plotfreqz',1);%滤掉40Hz以上的频率
 			EEG = pop_epoch( EEG, {'16' '20' '50'}, [-1  2], 'epochinfo', 'yes');%分段，将evnet值为16 20 50的前1s到2s提取出来，删掉其他
 			EEG = pop_rmbase( EEG, [-1000 0] ,[]);%基线校正，利用刺激开始前1000ms的波形的平均值进行基线校正
 			for nummarker =1:length(EEG.event)%修改marker
@@ -35,7 +34,7 @@
                 EEG.event(nummarker).type=strrep(EEG.event(nummarker).type,'20',cell2mat(condition(2)));%修改值为20的marker为条件2
                 EEG.event(nummarker).type=strrep(EEG.event(nummarker).type,'50',cell2mat(condition(3)));%修改值为50对marker为条件3
 			end
-			EEG = pop_reref(EEG, [13 19]);%重参考，根据EEG.chanloc中的电极位置信息来确定选择哪些电极来进行重参考
+			EEG = pop_reref(EEG, []);%重参考，根据EEG.chanloc中的电极位置信息来确定选择哪些电极来进行重参考，此处选择全脑平均
 			mkdir(['D:\markerchanged\' num2str(sub)]);%创建文件夹,防止下面一句报错
 			EEG = pop_saveset( EEG, 'filename',[num2str(sub),'.set'],'filepath', ['D:\markerchanged\' num2str(sub)]);%！！如果文件夹不存在会报错,可以修改保存的路径和文件名
 		close all
